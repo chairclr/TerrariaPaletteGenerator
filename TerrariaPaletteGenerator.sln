@@ -1,0 +1,43 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.33326.253
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TerrariaPaletteGenerator", "TerrariaPaletteGenerator\TerrariaPaletteGenerator.csproj", "{1512F6F4-C5AD-4439-8941-3A07B308EE69}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "plane", "plane\plane\plane.csproj", "{A266B6CF-5C59-4867-99F7-6B9107029AF6}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "plane.Generators", "plane\plane.Generators\plane.Generators.csproj", "{01843480-F1AD-409C-8F39-7CCA62F09ECF}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ImGui.NET", "plane\ImGui\ImGui.NET\ImGui.NET.csproj", "{F3FA6914-2EC0-4A8A-BC38-1711D989C04E}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{1512F6F4-C5AD-4439-8941-3A07B308EE69}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1512F6F4-C5AD-4439-8941-3A07B308EE69}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1512F6F4-C5AD-4439-8941-3A07B308EE69}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1512F6F4-C5AD-4439-8941-3A07B308EE69}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A266B6CF-5C59-4867-99F7-6B9107029AF6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A266B6CF-5C59-4867-99F7-6B9107029AF6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A266B6CF-5C59-4867-99F7-6B9107029AF6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A266B6CF-5C59-4867-99F7-6B9107029AF6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{01843480-F1AD-409C-8F39-7CCA62F09ECF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{01843480-F1AD-409C-8F39-7CCA62F09ECF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{01843480-F1AD-409C-8F39-7CCA62F09ECF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{01843480-F1AD-409C-8F39-7CCA62F09ECF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F3FA6914-2EC0-4A8A-BC38-1711D989C04E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F3FA6914-2EC0-4A8A-BC38-1711D989C04E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F3FA6914-2EC0-4A8A-BC38-1711D989C04E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F3FA6914-2EC0-4A8A-BC38-1711D989C04E}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {EB226AE9-4F68-42E1-817C-261395952601}
+	EndGlobalSection
+EndGlobal
