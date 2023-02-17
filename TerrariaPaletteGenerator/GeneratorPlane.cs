@@ -43,6 +43,8 @@ public class GeneratorPlane : Plane
 
     public ConstantBuffer<GeneratorComputeShaderBuffer>? GeneratorConstantBuffer;
 
+    private double GenerateTime = 0;
+
     public GeneratorPlane(string windowName) 
         : base(windowName)
     {
@@ -183,11 +185,9 @@ public class GeneratorPlane : Plane
 
     }
 
-    double x = 0;
     public override void RenderImGui()
     {
         ImGui.Begin("Generator");
-
 
         if (ImGui.Button("Generate"))
         {
@@ -215,9 +215,6 @@ public class GeneratorPlane : Plane
             Renderer!.Context.CopyResource(TileWallPaletteStagingTexture, TileWallPaletteTexture);
             Renderer!.Context.CopyResource(PaintPaletteStagingTexture, PaintPaletteTexture);
 
-            stopwatch.Stop();
-            x = stopwatch.Elapsed.TotalSeconds;
-
             using FileStream fs = new FileStream(Path.Combine(Path.GetDirectoryName(typeof(GeneratorPlane).Assembly.Location)!, "Data", "palette.bin"), FileMode.OpenOrCreate);
             using BinaryWriter writer = new BinaryWriter(fs);
             
@@ -242,9 +239,12 @@ public class GeneratorPlane : Plane
             
                 Renderer.Context.Unmap(PaintPaletteStagingTexture, 0);
             }
+
+            stopwatch.Stop();
+            GenerateTime = stopwatch.Elapsed.TotalSeconds;
         }
 
-        ImGui.Text($"{x}");
+        ImGui.Text($"{GenerateTime}");
 
         ImGui.End();
     }

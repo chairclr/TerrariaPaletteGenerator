@@ -1,5 +1,8 @@
 #include "ColorConversion.hlsl"
 
+// Define for using CIELAB color space
+#define LAB
+
 RWBuffer<float4> TileColors : register(u0);
 RWBuffer<float4> WallColors : register(u1);
 RWBuffer<float4> PaintColors : register(u2);
@@ -63,7 +66,12 @@ float4 GetTileColor(uint type, uint paint)
             }
             break;
     }
+    
+#ifdef LAB
     return float4(rgb2lab(tileColor.xyz), tileColor.w);
+#else
+    return tileColor;
+#endif
 }
 
 float4 GetWallColor(uint type, uint paint)
@@ -113,7 +121,12 @@ float4 GetWallColor(uint type, uint paint)
             }
             break;
     }
+    
+#ifdef LAB
     return float4(rgb2lab(wallColor.xyz), wallColor.w);
+#else
+    return wallColor;
+#endif
 }
 
 void GetInfoFromColor(float4 color, out uint tileType, out uint wallType, out uint paintType) 
@@ -222,7 +235,11 @@ void CSMain(uint3 id : SV_DispatchThreadID)
     uint wallType = 0;
     uint paintType = 0;
     
-    GetInfoFromColor(float4(rgb2lab(color.xyz), 1.0), tileType, wallType, paintType);
+#ifdef LAB
+    color = float4(rgb2lab(color.xyz), 1.0);
+#endif
+    
+    GetInfoFromColor(color, tileType, wallType, paintType);
     
     TileWallPalette[id] = (tileType << 16) | (wallType & 0xffff);
     PaintPalette[id] = paintType;
