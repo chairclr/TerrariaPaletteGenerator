@@ -1,12 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
+﻿using System.Diagnostics;
 using System.Numerics;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
 using ImGuiNET;
 using plane;
 using plane.Graphics;
@@ -45,7 +39,7 @@ public class GeneratorPlane : Plane
 
     private double GenerateTime = 0;
 
-    public GeneratorPlane(string windowName) 
+    public GeneratorPlane(string windowName)
         : base(windowName)
     {
 
@@ -53,38 +47,35 @@ public class GeneratorPlane : Plane
 
     public unsafe override void Load()
     {
-        PaletteComputeShader = ShaderCompiler.CompileFromFile<ComputeShader>(Renderer!, Path.Combine(Path.GetDirectoryName(typeof(GeneratorPlane).Assembly.Location)!, "Shaders", "PaletteComputeShader.hlsl"), "CSMain", ShaderModel.ComputeShader5_0);
+        string path = Path.GetDirectoryName(typeof(GeneratorPlane).Assembly.Location)!;
+
+        PaletteComputeShader = ShaderCompiler.CompileFromFile<ComputeShader>(Renderer!, Path.Combine(path, "Shaders", "PaletteComputeShader.hlsl"), "CSMain", ShaderModel.ComputeShader5_0);
 
         GeneratorConstantBuffer = new ConstantBuffer<GeneratorComputeShaderBuffer>(Renderer!);
 
-        using FileStream fs1 = new FileStream(Path.Combine(Path.GetDirectoryName(typeof(GeneratorPlane).Assembly.Location)!, "Data", "tileColorInfo.bin"), FileMode.Open);
-        using BinaryReader reader1 = new BinaryReader(fs1);
+        using FileStream tileColorFileStream = new FileStream(Path.Combine(path, "Data", "tileColorInfo.bin"), FileMode.Open);
+        using BinaryReader tileColorReader = new BinaryReader(tileColorFileStream);
 
-        int tileColorLen = reader1.ReadInt32();
-        Vector4[] tileColors = new Vector4[tileColorLen];
-        reader1.Read(MemoryMarshal.AsBytes(tileColors.AsSpan()));
+        Vector4[] tileColors = new Vector4[tileColorReader.ReadInt32()];
+        tileColorReader.Read(MemoryMarshal.AsBytes(tileColors.AsSpan()));
 
-        int wallColorLen = reader1.ReadInt32();
-        Vector4[] wallColors = new Vector4[wallColorLen];
-        reader1.Read(MemoryMarshal.AsBytes(wallColors.AsSpan()));
+        Vector4[] wallColors = new Vector4[tileColorReader.ReadInt32()];
+        tileColorReader.Read(MemoryMarshal.AsBytes(wallColors.AsSpan()));
 
-        int paintColorLen = reader1.ReadInt32();
-        Vector4[] paintColors = new Vector4[paintColorLen];
-        reader1.Read(MemoryMarshal.AsBytes(paintColors.AsSpan()));
+        Vector4[] paintColors = new Vector4[tileColorReader.ReadInt32()];
+        tileColorReader.Read(MemoryMarshal.AsBytes(paintColors.AsSpan()));
 
-        using FileStream fs2 = new FileStream(Path.Combine(Path.GetDirectoryName(typeof(GeneratorPlane).Assembly.Location)!, "Data", "validTileWallInfo.bin"), FileMode.Open);
-        using BinaryReader reader2 = new BinaryReader(fs2);
+        using FileStream validTileFileStream = new FileStream(Path.Combine(path, "Data", "validTileWallInfo.bin"), FileMode.Open);
+        using BinaryReader validTileReader = new BinaryReader(validTileFileStream);
 
-        int tilesForPixelArtLen = reader2.ReadInt32();
-        int[] tilesForPixelArt = new int[tilesForPixelArtLen];
-        reader2.Read(MemoryMarshal.AsBytes(tilesForPixelArt.AsSpan()));
+        int[] tilesForPixelArt = new int[validTileReader.ReadInt32()];
+        validTileReader.Read(MemoryMarshal.AsBytes(tilesForPixelArt.AsSpan()));
 
-        int wallsForPixelArtLen = reader2.ReadInt32();
-        int[] wallsForPixelArt = new int[wallsForPixelArtLen];
-        reader2.Read(MemoryMarshal.AsBytes(wallsForPixelArt.AsSpan()));
+        int[] wallsForPixelArt = new int[validTileReader.ReadInt32()];
+        validTileReader.Read(MemoryMarshal.AsBytes(wallsForPixelArt.AsSpan()));
 
-        GeneratorConstantBuffer.Data.TilesForPixelArtLength = tilesForPixelArtLen;
-        GeneratorConstantBuffer.Data.WallsForPixelArtLength = wallsForPixelArtLen;
+        GeneratorConstantBuffer.Data.TilesForPixelArtLength = tilesForPixelArt.Length;
+        GeneratorConstantBuffer.Data.WallsForPixelArtLength = wallsForPixelArt.Length;
 
         GeneratorConstantBuffer.WriteData();
 
@@ -94,7 +85,7 @@ public class GeneratorPlane : Plane
 
         TilesForPixelArtBuffer = new UnorderedAccessBuffer<int>(Renderer!, tilesForPixelArt, Format.FormatR32Uint);
         WallsForPixelArtBuffer = new UnorderedAccessBuffer<int>(Renderer!, wallsForPixelArt, Format.FormatR32Uint);
-        
+
         {
             Texture3DDesc tileWallPaletteTextureDesc = new Texture3DDesc()
             {
@@ -217,26 +208,26 @@ public class GeneratorPlane : Plane
 
             using FileStream fs = new FileStream(Path.Combine(Path.GetDirectoryName(typeof(GeneratorPlane).Assembly.Location)!, "Data", "palette.bin"), FileMode.OpenOrCreate);
             using BinaryWriter writer = new BinaryWriter(fs);
-            
+
             unsafe
             {
                 MappedSubresource tileWallPaletteMappedSubresource = new MappedSubresource();
                 SilkMarshal.ThrowHResult(Renderer.Context.Map(TileWallPaletteStagingTexture, 0, Map.Read, 0, ref tileWallPaletteMappedSubresource));
-            
+
                 Span<uint> data = new Span<uint>(tileWallPaletteMappedSubresource.PData, 256 * 256 * 256);
                 writer.Write(MemoryMarshal.AsBytes(data));
-            
+
                 Renderer.Context.Unmap(TileWallPaletteStagingTexture, 0);
             }
-            
+
             unsafe
             {
                 MappedSubresource paintPaletteMappedSubresource = new MappedSubresource();
                 SilkMarshal.ThrowHResult(Renderer.Context.Map(PaintPaletteStagingTexture, 0, Map.Read, 0, ref paintPaletteMappedSubresource));
-            
+
                 Span<byte> data = new Span<byte>(paintPaletteMappedSubresource.PData, 256 * 256 * 256);
                 writer.Write(data);
-            
+
                 Renderer.Context.Unmap(PaintPaletteStagingTexture, 0);
             }
 
