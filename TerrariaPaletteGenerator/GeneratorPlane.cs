@@ -120,10 +120,7 @@ public class GeneratorPlane : Plane
                 ViewDimension = UavDimension.Texture3D
             };
 
-            unchecked
-            {
-                tileWallPaletteUAVDesc.Texture3D.WSize = (uint)-1;
-            }
+            tileWallPaletteUAVDesc.Texture3D.WSize = uint.MaxValue;
 
             SilkMarshal.ThrowHResult(Renderer!.Device.CreateUnorderedAccessView(TileWallPaletteTexture, tileWallPaletteUAVDesc, ref TileWallPaletteUAV));
         }
@@ -162,10 +159,7 @@ public class GeneratorPlane : Plane
                 ViewDimension = UavDimension.Texture3D
             };
 
-            unchecked
-            {
-                paintPaletteUAVDesc.Texture3D.WSize = (uint)-1;
-            }
+            paintPaletteUAVDesc.Texture3D.WSize = uint.MaxValue;
 
             SilkMarshal.ThrowHResult(Renderer!.Device.CreateUnorderedAccessView(PaintPaletteTexture, paintPaletteUAVDesc, ref PaintPaletteUAV));
         }
