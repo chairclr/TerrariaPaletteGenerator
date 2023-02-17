@@ -37,6 +37,12 @@ public class GeneratorPlane : Plane
 
     public ConstantBuffer<GeneratorComputeShaderBuffer>? GeneratorConstantBuffer;
 
+    public ComputeShader? PaletteVisualizerComputeShader;
+
+    public Texture2D? PaletteVisualizationTexture;
+
+    public Texture2D? PaletteVisualizationTextureCopy;
+
     private double GenerateTime = 0;
 
     public GeneratorPlane(string windowName)
@@ -52,6 +58,8 @@ public class GeneratorPlane : Plane
         PaletteComputeShader = ShaderCompiler.CompileFromFile<ComputeShader>(Renderer!, Path.Combine(path, "Shaders", "PaletteComputeShader.hlsl"), "CSMain", ShaderModel.ComputeShader5_0);
 
         GeneratorConstantBuffer = new ConstantBuffer<GeneratorComputeShaderBuffer>(Renderer!);
+
+        PaletteVisualizerComputeShader = ShaderCompiler.CompileFromFile<ComputeShader>(Renderer!, Path.Combine(path, "Shaders", "PaletteVisualizationShader.hlsl"), "CSMain", ShaderModel.ComputeShader5_0);
 
         using FileStream tileColorFileStream = new FileStream(Path.Combine(path, "Data", "tileColorInfo.bin"), FileMode.Open);
         using BinaryReader tileColorReader = new BinaryReader(tileColorFileStream);
@@ -163,6 +171,9 @@ public class GeneratorPlane : Plane
 
             SilkMarshal.ThrowHResult(Renderer!.Device.CreateUnorderedAccessView(PaintPaletteTexture, paintPaletteUAVDesc, ref PaintPaletteUAV));
         }
+
+        PaletteVisualizationTexture = new Texture2D(Renderer, 4096, 4096, TextureType.None, sampleDesc: null, bindFlags: BindFlag.UnorderedAccess);
+        PaletteVisualizationTextureCopy = new Texture2D(Renderer, 4096, 4096, TextureType.None, sampleDesc: null, bindFlags: BindFlag.ShaderResource);
     }
 
     public override void Render()
@@ -178,60 +189,95 @@ public class GeneratorPlane : Plane
         {
             Stopwatch stopwatch = new Stopwatch();
             stopwatch.Restart();
-            PaletteComputeShader!.Bind(Renderer!);
 
-            unsafe
-            {
-                TileColorBuffer!.Bind(0);
-                WallColorBuffer!.Bind(1);
-                PaintColorBuffer!.Bind(2);
-
-                TilesForPixelArtBuffer!.Bind(3);
-                WallsForPixelArtBuffer!.Bind(4);
-
-                Renderer!.Context.CSSetUnorderedAccessViews(5, 1, ref TileWallPaletteUAV, (uint*)null);
-                Renderer!.Context.CSSetUnorderedAccessViews(6, 1, ref PaintPaletteUAV, (uint*)null);
-            }
-
-            GeneratorConstantBuffer!.Bind(0, BindTo.ComputeShader);
-
-            Renderer!.Context.Dispatch(16, 16, 64);
-
-            Renderer!.Context.CopyResource(TileWallPaletteStagingTexture, TileWallPaletteTexture);
-            Renderer!.Context.CopyResource(PaintPaletteStagingTexture, PaintPaletteTexture);
-
-            using FileStream fs = new FileStream(Path.Combine(Path.GetDirectoryName(typeof(GeneratorPlane).Assembly.Location)!, "Data", "palette.bin"), FileMode.OpenOrCreate);
-            using BinaryWriter writer = new BinaryWriter(fs);
-
-            unsafe
-            {
-                MappedSubresource tileWallPaletteMappedSubresource = new MappedSubresource();
-                SilkMarshal.ThrowHResult(Renderer.Context.Map(TileWallPaletteStagingTexture, 0, Map.Read, 0, ref tileWallPaletteMappedSubresource));
-
-                Span<uint> data = new Span<uint>(tileWallPaletteMappedSubresource.PData, 256 * 256 * 256);
-                writer.Write(MemoryMarshal.AsBytes(data));
-
-                Renderer.Context.Unmap(TileWallPaletteStagingTexture, 0);
-            }
-
-            unsafe
-            {
-                MappedSubresource paintPaletteMappedSubresource = new MappedSubresource();
-                SilkMarshal.ThrowHResult(Renderer.Context.Map(PaintPaletteStagingTexture, 0, Map.Read, 0, ref paintPaletteMappedSubresource));
-
-                Span<byte> data = new Span<byte>(paintPaletteMappedSubresource.PData, 256 * 256 * 256);
-                writer.Write(data);
-
-                Renderer.Context.Unmap(PaintPaletteStagingTexture, 0);
-            }
+            GeneratePalette();
 
             stopwatch.Stop();
             GenerateTime = stopwatch.Elapsed.TotalSeconds;
+
+            GeneratePaletteVisualization();
+        }
+
+        unsafe
+        {
+            ImGui.Image((nint)PaletteVisualizationTextureCopy!.ShaderResourceView.Handle, new Vector2(1024, 1024));
         }
 
         ImGui.Text($"{GenerateTime}");
 
         ImGui.End();
+    }
+
+    private void GeneratePalette()
+    {
+        PaletteComputeShader!.Bind(Renderer!);
+
+        unsafe
+        {
+            TileColorBuffer!.Bind(0);
+            WallColorBuffer!.Bind(1);
+            PaintColorBuffer!.Bind(2);
+
+            TilesForPixelArtBuffer!.Bind(3);
+            WallsForPixelArtBuffer!.Bind(4);
+
+            Renderer!.Context.CSSetUnorderedAccessViews(5, 1, ref TileWallPaletteUAV, (uint*)null);
+            Renderer!.Context.CSSetUnorderedAccessViews(6, 1, ref PaintPaletteUAV, (uint*)null);
+        }
+
+        GeneratorConstantBuffer!.Bind(0, BindTo.ComputeShader);
+
+        Renderer!.Context.Dispatch(16, 16, 64);
+
+        Renderer!.Context.CopyResource(TileWallPaletteStagingTexture, TileWallPaletteTexture);
+        Renderer!.Context.CopyResource(PaintPaletteStagingTexture, PaintPaletteTexture);
+
+        using FileStream fs = new FileStream(Path.Combine(Path.GetDirectoryName(typeof(GeneratorPlane).Assembly.Location)!, "Data", "palette.bin"), FileMode.OpenOrCreate);
+        using BinaryWriter writer = new BinaryWriter(fs);
+
+        unsafe
+        {
+            MappedSubresource tileWallPaletteMappedSubresource = new MappedSubresource();
+            SilkMarshal.ThrowHResult(Renderer.Context.Map(TileWallPaletteStagingTexture, 0, Map.Read, 0, ref tileWallPaletteMappedSubresource));
+
+            Span<uint> data = new Span<uint>(tileWallPaletteMappedSubresource.PData, 256 * 256 * 256);
+            writer.Write(MemoryMarshal.AsBytes(data));
+
+            Renderer.Context.Unmap(TileWallPaletteStagingTexture, 0);
+        }
+
+        unsafe
+        {
+            MappedSubresource paintPaletteMappedSubresource = new MappedSubresource();
+            SilkMarshal.ThrowHResult(Renderer.Context.Map(PaintPaletteStagingTexture, 0, Map.Read, 0, ref paintPaletteMappedSubresource));
+
+            Span<byte> data = new Span<byte>(paintPaletteMappedSubresource.PData, 256 * 256 * 256);
+            writer.Write(data);
+
+            Renderer.Context.Unmap(PaintPaletteStagingTexture, 0);
+        }
+
+    }
+
+    private void GeneratePaletteVisualization()
+    {
+        PaletteVisualizerComputeShader!.Bind(Renderer!);
+
+        unsafe
+        {
+            TileColorBuffer!.Bind(0);
+            WallColorBuffer!.Bind(1);
+            PaintColorBuffer!.Bind(2);
+
+            Renderer!.Context.CSSetUnorderedAccessViews(3, 1, ref PaletteVisualizationTexture!.UnorderedAccessView, (uint*)null);
+
+            Renderer!.Context.CSSetUnorderedAccessViews(4, 1, ref TileWallPaletteUAV, (uint*)null);
+            Renderer!.Context.CSSetUnorderedAccessViews(5, 1, ref PaintPaletteUAV, (uint*)null);
+        }
+
+        Renderer!.Context.Dispatch(4096 / 32, 4096 / 32, 1);
+
+        Renderer!.Context.CopyResource(PaletteVisualizationTextureCopy!.NativeTexture, PaletteVisualizationTexture!.NativeTexture);
     }
 }
 

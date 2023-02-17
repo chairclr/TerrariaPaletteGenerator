@@ -1,3 +1,6 @@
+// Define for using CIELAB color space
+#define LAB
+
 float3 rgb2xyz(float3 c)
 {
     float3 tmp;
@@ -58,4 +61,42 @@ float3 xyz2rgb(float3 c)
 float3 lab2rgb(float3 c)
 {
     return xyz2rgb(lab2xyz(float3(100.0 * c.x, 2.0 * 127.0 * (c.y - 0.5), 2.0 * 127.0 * (c.z - 0.5))));
+}
+
+float3 hsv2rgb(float3 hsv)
+{
+    float3 rgb = 0;
+    float C = hsv.z * hsv.y;
+    float H = hsv.x * 6;
+    float X = C * (1 - abs(fmod(H, 2) - 1));
+    if (hsv.y != 0)
+    {
+        float I = floor(H);
+        if (I == 0)
+        {
+            rgb = float3(C, X, 0);
+        }
+        else if (I == 1)
+        {
+            rgb = float3(X, C, 0);
+        }
+        else if (I == 2)
+        {
+            rgb = float3(0, C, X);
+        }
+        else if (I == 3)
+        {
+            rgb = float3(0, X, C);
+        }
+        else if (I == 4)
+        {
+            rgb = float3(X, 0, C);
+        }
+        else
+        {
+            rgb = float3(C, 0, X);
+        }
+    }
+    float M = hsv.z - C;
+    return rgb + M;
 }

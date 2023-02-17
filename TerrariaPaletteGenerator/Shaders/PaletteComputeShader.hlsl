@@ -1,8 +1,5 @@
 #include "ColorConversion.hlsl"
 
-// Define for using CIELAB color space
-#define LAB
-
 RWBuffer<float4> TileColors : register(u0);
 RWBuffer<float4> WallColors : register(u1);
 RWBuffer<float4> PaintColors : register(u2);
@@ -225,11 +222,7 @@ void GetInfoFromColor(float4 color, out uint tileType, out uint wallType, out ui
 [numthreads(16, 16, 4)]
 void CSMain(uint3 id : SV_DispatchThreadID)
 {
-    float4 color = float4(0.0, 0.0, 0.0, 1.0);
-    
-    color.r = ((float) id.r) / 255.0;
-    color.g = ((float) id.g) / 255.0;
-    color.b = ((float) id.b) / 255.0;
+    float4 color = float4(float3(id) / 255.0, 1.0);
     
     uint tileType = 0;
     uint wallType = 0;
