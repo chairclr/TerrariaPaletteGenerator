@@ -1,5 +1,5 @@
 // Define for using CIELAB color space
-#define LAB
+//#define LAB
 
 float3 rgb2xyz(float3 c)
 {

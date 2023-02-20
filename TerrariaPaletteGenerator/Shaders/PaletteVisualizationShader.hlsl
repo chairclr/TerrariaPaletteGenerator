@@ -144,7 +144,11 @@ void CSMain(uint3 id : SV_DispatchThreadID)
         tileWallColor = GetWallColor(wall, paint);
     }
     
-    float d = distance(tileWallColor.rgb, rgb2lab(color.rgb));
+#ifdef LAB
+    color = float4(rgb2lab(color.rgb), color.a);
+#endif
+    
+    float d = distance(tileWallColor.rgb, color.rgb);
     
     PaletteVisualizationTexture[id.xy] = float4(lerp(float3(0.0, 0.0, 0.0), float3(1.0, 1.0, 1.0), d * 2.0), 1.0);
 }

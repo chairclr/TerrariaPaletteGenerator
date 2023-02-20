@@ -210,7 +210,7 @@ public class GeneratorPlane : Plane
 
     private void GeneratePalette()
     {
-        PaletteComputeShader!.Bind(Renderer!);
+        PaletteComputeShader!.Bind();
 
         unsafe
         {
@@ -261,7 +261,7 @@ public class GeneratorPlane : Plane
 
     private void GeneratePaletteVisualization()
     {
-        PaletteVisualizerComputeShader!.Bind(Renderer!);
+        PaletteVisualizerComputeShader!.Bind();
 
         unsafe
         {
