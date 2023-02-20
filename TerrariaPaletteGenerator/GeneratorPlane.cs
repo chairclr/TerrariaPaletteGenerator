@@ -27,13 +27,11 @@ public class GeneratorPlane : Plane
 
     public UnorderedAccessBuffer<int>? WallsForPixelArtBuffer;
 
-    public ComPtr<ID3D11Texture3D> TileWallPaletteTexture = default;
-    public ComPtr<ID3D11Texture3D> TileWallPaletteStagingTexture = default;
-    public ComPtr<ID3D11UnorderedAccessView> TileWallPaletteUAV = default;
+    public Texture3D? TileWallPaletteTexture;
+    public Texture3D? TileWallPaletteStagingTexture;
 
-    public ComPtr<ID3D11Texture3D> PaintPaletteTexture = default;
-    public ComPtr<ID3D11Texture3D> PaintPaletteStagingTexture = default;
-    public ComPtr<ID3D11UnorderedAccessView> PaintPaletteUAV = default;
+    public Texture3D? PaintPaletteTexture;
+    public Texture3D? PaintPaletteStagingTexture;
 
     public ConstantBuffer<GeneratorComputeShaderBuffer>? GeneratorConstantBuffer;
 
@@ -94,86 +92,14 @@ public class GeneratorPlane : Plane
         TilesForPixelArtBuffer = new UnorderedAccessBuffer<int>(Renderer!, tilesForPixelArt, Format.FormatR32Uint);
         WallsForPixelArtBuffer = new UnorderedAccessBuffer<int>(Renderer!, wallsForPixelArt, Format.FormatR32Uint);
 
-        {
-            Texture3DDesc tileWallPaletteTextureDesc = new Texture3DDesc()
-            {
-                BindFlags = (uint)BindFlag.UnorderedAccess,
-                Format = Format.FormatR32Uint,
-                Usage = Usage.Default,
-                MipLevels = 1,
-                Width = 256,
-                Height = 256,
-                Depth = 256
-            };
+        TileWallPaletteTexture = new Texture3D(Renderer!, 256, 256, 256, TextureType.None, BindFlag.UnorderedAccess, Format.FormatR32Uint);
+        TileWallPaletteStagingTexture = new Texture3D(Renderer!, 256, 256, 256, TextureType.None, BindFlag.None, Format.FormatR32Uint, Usage.Staging, CpuAccessFlag.Read);
 
-            SilkMarshal.ThrowHResult(Renderer!.Device.CreateTexture3D(tileWallPaletteTextureDesc, (SubresourceData*)null, ref TileWallPaletteTexture));
+        PaintPaletteTexture = new Texture3D(Renderer!, 256, 256, 256, TextureType.None, BindFlag.UnorderedAccess, Format.FormatR8Uint);
+        PaintPaletteStagingTexture = new Texture3D(Renderer!, 256, 256, 256, TextureType.None, BindFlag.None, Format.FormatR8Uint, Usage.Staging, CpuAccessFlag.Read);
 
-            Texture3DDesc tileWallPaletteStagingTextureDesc = new Texture3DDesc()
-            {
-                BindFlags = (uint)BindFlag.None,
-                Format = Format.FormatR32Uint,
-                Usage = Usage.Staging,
-                CPUAccessFlags = (uint)CpuAccessFlag.Read,
-                MipLevels = 1,
-                Width = 256,
-                Height = 256,
-                Depth = 256
-            };
-
-            SilkMarshal.ThrowHResult(Renderer.Device.CreateTexture3D(tileWallPaletteStagingTextureDesc, (SubresourceData*)null, ref TileWallPaletteStagingTexture));
-
-            UnorderedAccessViewDesc tileWallPaletteUAVDesc = new UnorderedAccessViewDesc()
-            {
-                Format = Format.FormatR32Uint,
-                ViewDimension = UavDimension.Texture3D
-            };
-
-            tileWallPaletteUAVDesc.Texture3D.WSize = uint.MaxValue;
-
-            SilkMarshal.ThrowHResult(Renderer!.Device.CreateUnorderedAccessView(TileWallPaletteTexture, tileWallPaletteUAVDesc, ref TileWallPaletteUAV));
-        }
-
-        {
-            Texture3DDesc paintPaletteTextureDesc = new Texture3DDesc()
-            {
-                BindFlags = (uint)BindFlag.UnorderedAccess,
-                Format = Format.FormatR8Uint,
-                Usage = Usage.Default,
-                MipLevels = 1,
-                Width = 256,
-                Height = 256,
-                Depth = 256
-            };
-
-            SilkMarshal.ThrowHResult(Renderer.Device.CreateTexture3D(paintPaletteTextureDesc, (SubresourceData*)null, ref PaintPaletteTexture));
-
-            Texture3DDesc paintPaletteStagingTextureDesc = new Texture3DDesc()
-            {
-                BindFlags = (uint)BindFlag.None,
-                Format = Format.FormatR8Uint,
-                Usage = Usage.Staging,
-                CPUAccessFlags = (uint)CpuAccessFlag.Read,
-                MipLevels = 1,
-                Width = 256,
-                Height = 256,
-                Depth = 256
-            };
-
-            SilkMarshal.ThrowHResult(Renderer.Device.CreateTexture3D(paintPaletteStagingTextureDesc, (SubresourceData*)null, ref PaintPaletteStagingTexture));
-
-            UnorderedAccessViewDesc paintPaletteUAVDesc = new UnorderedAccessViewDesc()
-            {
-                Format = Format.FormatR8Uint,
-                ViewDimension = UavDimension.Texture3D
-            };
-
-            paintPaletteUAVDesc.Texture3D.WSize = uint.MaxValue;
-
-            SilkMarshal.ThrowHResult(Renderer!.Device.CreateUnorderedAccessView(PaintPaletteTexture, paintPaletteUAVDesc, ref PaintPaletteUAV));
-        }
-
-        PaletteVisualizationTexture = new Texture2D(Renderer, 4096, 4096, TextureType.None, sampleDesc: null, bindFlags: BindFlag.UnorderedAccess);
-        PaletteVisualizationTextureCopy = new Texture2D(Renderer, 4096, 4096, TextureType.None, sampleDesc: null, bindFlags: BindFlag.ShaderResource);
+        PaletteVisualizationTexture = new Texture2D(Renderer!, 4096, 4096, TextureType.None, sampleDesc: null, bindFlags: BindFlag.UnorderedAccess);
+        PaletteVisualizationTextureCopy = new Texture2D(Renderer!, 4096, 4096, TextureType.None, sampleDesc: null, bindFlags: BindFlag.ShaderResource);
     }
 
     public override void Render()
@@ -221,16 +147,16 @@ public class GeneratorPlane : Plane
             TilesForPixelArtBuffer!.Bind(3);
             WallsForPixelArtBuffer!.Bind(4);
 
-            Renderer!.Context.CSSetUnorderedAccessViews(5, 1, ref TileWallPaletteUAV, (uint*)null);
-            Renderer!.Context.CSSetUnorderedAccessViews(6, 1, ref PaintPaletteUAV, (uint*)null);
+            Renderer!.Context.CSSetUnorderedAccessViews(5, 1, ref TileWallPaletteTexture!.UnorderedAccessView, (uint*)null);
+            Renderer!.Context.CSSetUnorderedAccessViews(6, 1, ref PaintPaletteTexture!.UnorderedAccessView, (uint*)null);
         }
 
         GeneratorConstantBuffer!.Bind(0, BindTo.ComputeShader);
 
         Renderer!.Context.Dispatch(16, 16, 64);
 
-        Renderer!.Context.CopyResource(TileWallPaletteStagingTexture, TileWallPaletteTexture);
-        Renderer!.Context.CopyResource(PaintPaletteStagingTexture, PaintPaletteTexture);
+        Renderer!.Context.CopyResource(TileWallPaletteStagingTexture!.NativeTexture, TileWallPaletteTexture.NativeTexture);
+        Renderer!.Context.CopyResource(PaintPaletteStagingTexture!.NativeTexture, PaintPaletteTexture.NativeTexture);
 
         using FileStream fs = new FileStream(Path.Combine(Path.GetDirectoryName(typeof(GeneratorPlane).Assembly.Location)!, "Data", "palette.bin"), FileMode.OpenOrCreate);
         using BinaryWriter writer = new BinaryWriter(fs);
@@ -238,23 +164,23 @@ public class GeneratorPlane : Plane
         unsafe
         {
             MappedSubresource tileWallPaletteMappedSubresource = new MappedSubresource();
-            SilkMarshal.ThrowHResult(Renderer.Context.Map(TileWallPaletteStagingTexture, 0, Map.Read, 0, ref tileWallPaletteMappedSubresource));
+            SilkMarshal.ThrowHResult(Renderer.Context.Map(TileWallPaletteStagingTexture.NativeTexture, 0, Map.Read, 0, ref tileWallPaletteMappedSubresource));
 
             Span<uint> data = new Span<uint>(tileWallPaletteMappedSubresource.PData, 256 * 256 * 256);
             writer.Write(MemoryMarshal.AsBytes(data));
 
-            Renderer.Context.Unmap(TileWallPaletteStagingTexture, 0);
+            Renderer.Context.Unmap(TileWallPaletteStagingTexture.NativeTexture, 0);
         }
 
         unsafe
         {
             MappedSubresource paintPaletteMappedSubresource = new MappedSubresource();
-            SilkMarshal.ThrowHResult(Renderer.Context.Map(PaintPaletteStagingTexture, 0, Map.Read, 0, ref paintPaletteMappedSubresource));
+            SilkMarshal.ThrowHResult(Renderer.Context.Map(PaintPaletteStagingTexture.NativeTexture, 0, Map.Read, 0, ref paintPaletteMappedSubresource));
 
             Span<byte> data = new Span<byte>(paintPaletteMappedSubresource.PData, 256 * 256 * 256);
             writer.Write(data);
 
-            Renderer.Context.Unmap(PaintPaletteStagingTexture, 0);
+            Renderer.Context.Unmap(PaintPaletteStagingTexture.NativeTexture, 0);
         }
 
     }
@@ -271,8 +197,8 @@ public class GeneratorPlane : Plane
 
             Renderer!.Context.CSSetUnorderedAccessViews(3, 1, ref PaletteVisualizationTexture!.UnorderedAccessView, (uint*)null);
 
-            Renderer!.Context.CSSetUnorderedAccessViews(4, 1, ref TileWallPaletteUAV, (uint*)null);
-            Renderer!.Context.CSSetUnorderedAccessViews(5, 1, ref PaintPaletteUAV, (uint*)null);
+            Renderer!.Context.CSSetUnorderedAccessViews(4, 1, ref TileWallPaletteTexture!.UnorderedAccessView, (uint*)null);
+            Renderer!.Context.CSSetUnorderedAccessViews(5, 1, ref PaintPaletteTexture!.UnorderedAccessView, (uint*)null);
         }
 
         Renderer!.Context.Dispatch(4096 / 32, 4096 / 32, 1);
