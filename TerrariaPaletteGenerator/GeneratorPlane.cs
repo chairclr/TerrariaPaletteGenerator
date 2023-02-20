@@ -182,7 +182,6 @@ public class GeneratorPlane : Plane
 
             Renderer.Context.Unmap(PaintPaletteStagingTexture.NativeTexture, 0);
         }
-
     }
 
     private void GeneratePaletteVisualization()
