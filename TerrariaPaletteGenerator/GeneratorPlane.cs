@@ -153,35 +153,20 @@ public class GeneratorPlane : Plane
 
         GeneratorConstantBuffer!.Bind(0, BindTo.ComputeShader);
 
-        Renderer!.Context.Dispatch(16, 16, 64);
+        Renderer!.Context.Dispatch(26, 26, 26);
 
         Renderer!.Context.CopyResource(TileWallPaletteStagingTexture!.NativeTexture, TileWallPaletteTexture.NativeTexture);
         Renderer!.Context.CopyResource(PaintPaletteStagingTexture!.NativeTexture, PaintPaletteTexture.NativeTexture);
 
         using FileStream fs = new FileStream(Path.Combine(Path.GetDirectoryName(typeof(GeneratorPlane).Assembly.Location)!, "Data", "palette.bin"), FileMode.OpenOrCreate);
-        using BinaryWriter writer = new BinaryWriter(fs);
 
-        unsafe
-        {
-            MappedSubresource tileWallPaletteMappedSubresource = new MappedSubresource();
-            SilkMarshal.ThrowHResult(Renderer.Context.Map(TileWallPaletteStagingTexture.NativeTexture, 0, Map.Read, 0, ref tileWallPaletteMappedSubresource));
+        ReadOnlySpan<uint> tileWallPaletteData = TileWallPaletteStagingTexture.MapReadSpan<uint>();
+        fs.Write(MemoryMarshal.AsBytes(tileWallPaletteData));
+        TileWallPaletteStagingTexture.Unmap();
 
-            Span<uint> data = new Span<uint>(tileWallPaletteMappedSubresource.PData, 256 * 256 * 256);
-            writer.Write(MemoryMarshal.AsBytes(data));
-
-            Renderer.Context.Unmap(TileWallPaletteStagingTexture.NativeTexture, 0);
-        }
-
-        unsafe
-        {
-            MappedSubresource paintPaletteMappedSubresource = new MappedSubresource();
-            SilkMarshal.ThrowHResult(Renderer.Context.Map(PaintPaletteStagingTexture.NativeTexture, 0, Map.Read, 0, ref paintPaletteMappedSubresource));
-
-            Span<byte> data = new Span<byte>(paintPaletteMappedSubresource.PData, 256 * 256 * 256);
-            writer.Write(data);
-
-            Renderer.Context.Unmap(PaintPaletteStagingTexture.NativeTexture, 0);
-        }
+        ReadOnlySpan<byte> paintPaletteData = PaintPaletteStagingTexture.MapReadSpan<byte>();
+        fs.Write(paintPaletteData);
+        PaintPaletteStagingTexture.Unmap();
     }
 
     private void GeneratePaletteVisualization()

@@ -219,7 +219,7 @@ void GetInfoFromColor(float4 color, out uint tileType, out uint wallType, out ui
     paintType = minPaint;
 }
 
-[numthreads(16, 16, 4)]
+[numthreads(10, 10, 10)]
 void CSMain(uint3 id : SV_DispatchThreadID)
 {
     float4 color = float4(float3(id) / 255.0, 1.0);
