@@ -17,15 +17,15 @@ public class GeneratorPlane : Plane
 {
     public ComputeShader? PaletteComputeShader;
 
-    public UnorderedAccessBuffer<Vector4>? TileColorBuffer;
+    public ShaderResourceBuffer<Vector4>? TileColorBuffer;
 
-    public UnorderedAccessBuffer<Vector4>? WallColorBuffer;
+    public ShaderResourceBuffer<Vector4>? WallColorBuffer;
 
-    public UnorderedAccessBuffer<Vector4>? PaintColorBuffer;
+    public ShaderResourceBuffer<Vector4>? PaintColorBuffer;
 
-    public UnorderedAccessBuffer<int>? TilesForPixelArtBuffer;
+    public ShaderResourceBuffer<int>? TilesForPixelArtBuffer;
 
-    public UnorderedAccessBuffer<int>? WallsForPixelArtBuffer;
+    public ShaderResourceBuffer<int>? WallsForPixelArtBuffer;
 
     public Texture3D? TileWallPaletteTexture;
     public Texture3D? TileWallPaletteStagingTexture;
@@ -85,12 +85,12 @@ public class GeneratorPlane : Plane
 
         GeneratorConstantBuffer.WriteData();
 
-        TileColorBuffer = new UnorderedAccessBuffer<Vector4>(Renderer!, tileColors, Format.FormatR32G32B32A32Float);
-        WallColorBuffer = new UnorderedAccessBuffer<Vector4>(Renderer!, wallColors, Format.FormatR32G32B32A32Float);
-        PaintColorBuffer = new UnorderedAccessBuffer<Vector4>(Renderer!, paintColors, Format.FormatR32G32B32A32Float);
+        TileColorBuffer = new ShaderResourceBuffer<Vector4>(Renderer!, tileColors, Format.FormatR32G32B32A32Float);
+        WallColorBuffer = new ShaderResourceBuffer<Vector4>(Renderer!, wallColors, Format.FormatR32G32B32A32Float);
+        PaintColorBuffer = new ShaderResourceBuffer<Vector4>(Renderer!, paintColors, Format.FormatR32G32B32A32Float);
 
-        TilesForPixelArtBuffer = new UnorderedAccessBuffer<int>(Renderer!, tilesForPixelArt, Format.FormatR32Uint);
-        WallsForPixelArtBuffer = new UnorderedAccessBuffer<int>(Renderer!, wallsForPixelArt, Format.FormatR32Uint);
+        TilesForPixelArtBuffer = new ShaderResourceBuffer<int>(Renderer!, tilesForPixelArt, Format.FormatR32Uint);
+        WallsForPixelArtBuffer = new ShaderResourceBuffer<int>(Renderer!, wallsForPixelArt, Format.FormatR32Uint);
 
         TileWallPaletteTexture = new Texture3D(Renderer!, 256, 256, 256, TextureType.None, BindFlag.UnorderedAccess, Format.FormatR32Uint);
         TileWallPaletteStagingTexture = new Texture3D(Renderer!, 256, 256, 256, TextureType.None, BindFlag.None, Format.FormatR32Uint, Usage.Staging, CpuAccessFlag.Read);
@@ -140,15 +140,15 @@ public class GeneratorPlane : Plane
 
         unsafe
         {
-            TileColorBuffer!.Bind(0);
-            WallColorBuffer!.Bind(1);
-            PaintColorBuffer!.Bind(2);
+            TileColorBuffer!.Bind(0, BindTo.ComputeShader);
+            WallColorBuffer!.Bind(1, BindTo.ComputeShader);
+            PaintColorBuffer!.Bind(2, BindTo.ComputeShader);
 
-            TilesForPixelArtBuffer!.Bind(3);
-            WallsForPixelArtBuffer!.Bind(4);
+            TilesForPixelArtBuffer!.Bind(3, BindTo.ComputeShader);
+            WallsForPixelArtBuffer!.Bind(4, BindTo.ComputeShader);
 
-            Renderer!.Context.CSSetUnorderedAccessViews(5, 1, ref TileWallPaletteTexture!.UnorderedAccessView, (uint*)null);
-            Renderer!.Context.CSSetUnorderedAccessViews(6, 1, ref PaintPaletteTexture!.UnorderedAccessView, (uint*)null);
+            Renderer!.Context.CSSetUnorderedAccessViews(0, 1, ref TileWallPaletteTexture!.UnorderedAccessView, (uint*)null);
+            Renderer!.Context.CSSetUnorderedAccessViews(1, 1, ref PaintPaletteTexture!.UnorderedAccessView, (uint*)null);
         }
 
         GeneratorConstantBuffer!.Bind(0, BindTo.ComputeShader);
@@ -175,14 +175,14 @@ public class GeneratorPlane : Plane
 
         unsafe
         {
-            TileColorBuffer!.Bind(0);
-            WallColorBuffer!.Bind(1);
-            PaintColorBuffer!.Bind(2);
+            TileColorBuffer!.Bind(0, BindTo.ComputeShader);
+            WallColorBuffer!.Bind(1, BindTo.ComputeShader);
+            PaintColorBuffer!.Bind(2, BindTo.ComputeShader);
 
-            Renderer!.Context.CSSetUnorderedAccessViews(3, 1, ref PaletteVisualizationTexture!.UnorderedAccessView, (uint*)null);
+            Renderer!.Context.CSSetUnorderedAccessViews(0, 1, ref PaletteVisualizationTexture!.UnorderedAccessView, (uint*)null);
 
-            Renderer!.Context.CSSetUnorderedAccessViews(4, 1, ref TileWallPaletteTexture!.UnorderedAccessView, (uint*)null);
-            Renderer!.Context.CSSetUnorderedAccessViews(5, 1, ref PaintPaletteTexture!.UnorderedAccessView, (uint*)null);
+            Renderer!.Context.CSSetUnorderedAccessViews(1, 1, ref TileWallPaletteTexture!.UnorderedAccessView, (uint*)null);
+            Renderer!.Context.CSSetUnorderedAccessViews(2, 1, ref PaintPaletteTexture!.UnorderedAccessView, (uint*)null);
         }
 
         Renderer!.Context.Dispatch(4096 / 32, 4096 / 32, 1);

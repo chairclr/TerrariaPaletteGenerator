@@ -1,14 +1,14 @@
 #include "ColorConversion.hlsl"
 
-RWBuffer<float4> TileColors : register(u0);
-RWBuffer<float4> WallColors : register(u1);
-RWBuffer<float4> PaintColors : register(u2);
+Buffer<float4> TileColors : register(t0);
+Buffer<float4> WallColors : register(t1);
+Buffer<float4> PaintColors : register(t2);
 
-RWBuffer<uint> TilesForPixelArt : register(u3);
-RWBuffer<uint> WallsForPixelArt : register(u4);
+Buffer<uint> TilesForPixelArt : register(t3);
+Buffer<uint> WallsForPixelArt : register(t4);
 
-RWTexture3D<uint> TileWallPalette : register(u5);
-RWTexture3D<uint> PaintPalette : register(u6);
+RWTexture3D<uint> TileWallPalette : register(u0);
+RWTexture3D<uint> PaintPalette : register(u1);
 
 cbuffer ComputeShaderBuffer : register(b0)
 {
@@ -18,24 +18,22 @@ cbuffer ComputeShaderBuffer : register(b0)
 
 float4 GetTileColor(uint type, uint paint)
 {
-    float4 tileColor = TileColors[type];
-    float4 paintColor = PaintColors[paint];
+    float4 originalTileColor = TileColors[type];
+    float3 paintColor = PaintColors[paint].rgb;
     
-    float num = tileColor.r;
-    float num2 = tileColor.b;
-    float num3 = tileColor.g;
-    if (num2 > num)
+    float3 tileColor = originalTileColor.rgb;
+    float3 tileColorCopy = tileColor;
+    
+    if (tileColorCopy.b > tileColorCopy.r)
     {
-        float num4 = num;
-        num = num2;
-        num2 = num4;
+        tileColorCopy.r = tileColorCopy.b;
     }
 
-    if (num3 > num)
+    if (tileColorCopy.g > tileColorCopy.r)
     {
-        float num5 = num;
-        num = num3;
-        num3 = num5;
+        float temp = tileColorCopy.r;
+        tileColorCopy.r = tileColorCopy.g;
+        tileColorCopy.g = temp;
     }
     
     switch (paint)
@@ -44,53 +42,41 @@ float4 GetTileColor(uint type, uint paint)
         case 31:
             break;
         case 29:
-            {
-                float num7 = num3 * 0.3f;
-                tileColor.r = paintColor.r * num7;
-                tileColor.g = paintColor.g * num7;
-                tileColor.b = paintColor.b * num7;
-            }
+            tileColor = paintColor * tileColorCopy.g * 0.3;
             break;
         case 30:
-            tileColor.xyz = (1.0 - tileColor.xyz);
+            tileColor = 1.0 - tileColor;
             break;
         default:
-            {
-                float num6 = num;
-                tileColor.r = paintColor.r * num6;
-                tileColor.g = paintColor.g * num6;
-                tileColor.b = paintColor.b * num6;
-            }
+            tileColor = paintColor * tileColorCopy.r;
             break;
     }
     
 #ifdef LAB
-    return float4(rgb2lab(tileColor.xyz), tileColor.w);
+    return float4(rgb2lab(tileColor), originalTileColor.a);
 #else
-    return tileColor;
+    return float4(tileColor, originalTileColor.a);
 #endif
 }
 
 float4 GetWallColor(uint type, uint paint)
 {
-    float4 wallColor = WallColors[type];
-    float4 paintColor = PaintColors[paint];
+    float4 originalWallColor = WallColors[type];
+    float3 paintColor = PaintColors[paint].rgb;
     
-    float num = wallColor.r;
-    float num2 = wallColor.b;
-    float num3 = wallColor.g;
-    if (num2 > num)
+    float3 wallColor = originalWallColor.rgb;
+    float3 wallColorCopy = wallColor;
+    
+    if (wallColorCopy.b > wallColorCopy.r)
     {
-        float num4 = num;
-        num = num2;
-        num2 = num4;
+        wallColorCopy.r = wallColorCopy.b;
     }
 
-    if (num3 > num)
+    if (wallColorCopy.g > wallColorCopy.r)
     {
-        float num5 = num;
-        num = num3;
-        num3 = num5;
+        float temp = wallColorCopy.r;
+        wallColorCopy.r = wallColorCopy.g;
+        wallColorCopy.g = temp;
     }
     
     switch (paint)
@@ -99,30 +85,20 @@ float4 GetWallColor(uint type, uint paint)
         case 31:
             break;
         case 29:
-            {
-                float num7 = num3 * 0.3f;
-                wallColor.r = paintColor.r * num7;
-                wallColor.g = paintColor.g * num7;
-                wallColor.b = paintColor.b * num7;
-            }
+            wallColor = paintColor * wallColorCopy.g * 0.3;
             break;
         case 30:
-            wallColor.xyz = (1.0 - wallColor.xyz) / 2.0;
+            wallColor = (1.0 - wallColor) / 2.0;
             break;
         default:
-            {
-                float num6 = num;
-                wallColor.r = paintColor.r * num6;
-                wallColor.g = paintColor.g * num6;
-                wallColor.b = paintColor.b * num6;
-            }
+            wallColor = paintColor * wallColorCopy.r;
             break;
     }
     
 #ifdef LAB
-    return float4(rgb2lab(wallColor.xyz), wallColor.w);
+    return float4(rgb2lab(wallColor), originalWallColor.a);
 #else
-    return wallColor;
+    return float4(wallColor, originalWallColor.a);
 #endif
 }
 
