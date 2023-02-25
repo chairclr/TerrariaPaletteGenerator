@@ -126,7 +126,7 @@ float4 GetWallColor(uint type, uint paint)
 #endif
 }
 
-void GetInfoFromColor(float4 color, out uint tileType, out uint wallType, out uint paintType) 
+void GetInfoFromColor(float4 color, out uint tileType, out uint wallType, out uint paintType)
 {
     uint minTile = -1;
     uint minWall = -1;
